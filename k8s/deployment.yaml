@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-deploy
+  name: hello-deployment
   namespace: demo
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: hello
@@ -14,8 +14,7 @@ spec:
         app: hello
     spec:
       containers:
-      - name: hello
-        image: ghcr.io/juliane-farmer/github-actions-kubernetes/hello:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
+        - name: hello
+          image: rancher/hello-world
+          ports:
+            - containerPort: 80
