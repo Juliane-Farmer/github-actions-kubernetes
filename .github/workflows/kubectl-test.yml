@@ -15,11 +15,15 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Create random pod name
-      run: echo "POD_ID=$RANDOM" >> $GITHUB_ENV
+      shell: pwsh
+      run: echo "POD_ID=$RANDOM" >> $env:GITHUB_ENV
 
     - name: Apply pod
+      shell: pwsh
       run: |
-        sed "s/{{POD_ID}}/$POD_ID/" k8s/pod.yaml | kubectl --namespace $NAMESPACE apply -f -
+        (Get-Content k8s/pod.yaml) -replace '\{\{POD_ID\}\}', "$env:POD_ID" |
+        kubectl --namespace $env:NAMESPACE apply -f -
 
     - name: Get pods
-      run: kubectl --namespace $NAMESPACE get pods
+      shell: pwsh
+      run: kubectl --namespace $env:NAMESPACE get pods
