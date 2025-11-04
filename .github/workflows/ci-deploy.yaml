@@ -1,0 +1,52 @@
+name: ci-deploy
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ghcr.io/juliane-farmer/github-actions-kubernetes/hello
+      NAMESPACE: demo
+      KUBECONFIG: /home/runner/.kube/config
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Docker login
+      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+    - name: Build
+      run: docker build -t $IMAGE_NAME:${{ github.sha }} -t $IMAGE_NAME:latest .
+    - name: Push
+      run: |
+        docker push $IMAGE_NAME:${{ github.sha }}
+        docker push $IMAGE_NAME:latest
+    - name: Random Pod ID
+      id: rid
+      run: echo "RID=${{ github.run_id }}-${{ github.run_number }}" >> $GITHUB_ENV
+    - name: Apply test Pod with random name
+      run: |
+        sed "s/mypod-ID/mypod-${RID}/" k8s/pod-template.yaml | kubectl apply -f -
+        kubectl -n $NAMESPACE get pods
+    - name: Show test Pod logs
+      run: |
+        kubectl -n $NAMESPACE wait --for=condition=Ready pod/mypod-${RID} --timeout=60s || true
+        kubectl -n $NAMESPACE logs pod/mypod-${RID} || true
+    - name: Deploy via kubectl
+      run: |
+        kubectl -n $NAMESPACE apply -f k8s/deployment.yaml
+        kubectl -n $NAMESPACE apply -f k8s/service.yaml
+        kubectl -n $NAMESPACE rollout status deployment/hello-deploy --timeout=120s
+    - name: Rollout restart
+      if: always()
+      run: kubectl -n $NAMESPACE rollout restart deployment/hello-deploy
+    - name: Helm upgrade --install
+      run: |
+        helm upgrade --install hello-release ./helm/hello-chart -n $NAMESPACE --create-namespace \
+          --set image.repository=$IMAGE_NAME --set image.tag=${{ github.sha }} \
+          --set service.type=NodePort --set service.nodePort=30080
+        kubectl -n $NAMESPACE rollout status deployment/hello-deploy --timeout=120s
+    - name: Check result
+      run: |
+        kubectl -n $NAMESPACE get pods
+        kubectl -n $NAMESPACE get svc hello-svc -o wide

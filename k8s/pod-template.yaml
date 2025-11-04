@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod-ID
+  namespace: demo
+  labels:
+    name: mypod
+spec:
+  containers:
+  - name: mypod
+    image: rancher/hello-world
