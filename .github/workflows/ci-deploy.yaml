@@ -39,7 +39,8 @@ jobs:
         kubectl -n $NAMESPACE rollout status deployment/hello-deploy --timeout=120s
     - name: Rollout restart
       if: always()
-      run: kubectl -n $NAMESPACE rollout restart deployment/hello-deploy
+      run:  kubectl --namespace $NAMESPACE rollout restart deployment/hello-deploy
+
     - name: Helm upgrade --install
       run: |
         helm upgrade --install hello-release ./helm/hello-chart -n $NAMESPACE --create-namespace \
