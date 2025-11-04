@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: mypod-ID
+  name: mypod-{{POD_ID}}
   namespace: demo
   labels:
     name: mypod

@@ -1,0 +1,25 @@
+name: kubectl-test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-kubectl:
+    runs-on: self-hosted
+    
+    env:
+      NAMESPACE: demo
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create random pod name
+      run: echo "POD_ID=$RANDOM" >> $GITHUB_ENV
+
+    - name: Apply pod
+      run: |
+        sed "s/{{POD_ID}}/$POD_ID/" k8s/pod.yaml | kubectl --namespace $NAMESPACE apply -f -
+
+    - name: Get pods
+      run: kubectl --namespace $NAMESPACE get pods
